@@ -11,21 +11,22 @@ provider "digitalocean" {
 
 resource "digitalocean_volume" "docker_volume" {
     region      = "fra1"
-    name        = "volume-docker-fra1"
-    size        = 100
-    description = "Docker volume"
+    name        = "volume-docker-winterfell${count.index + 1}"
+    size        = "${var.volume_size}"
+    description = "Docker volume of Winterfell${count.index + 1}"
+    count              = "${var.num_instances}"
 }
 
 resource "digitalocean_droplet" "docker" {
-  ssh_keys           = ["${var.ssh_key_ID}"]
   image              = "${var.image}"
   region             = "${var.region}"
-  size               = "1gb"
-  private_networking = true
+  size               = "${var.instance_size}"
   name               = "winterfell${count.index + 1}"
-  volume_ids = ["${digitalocean_volume.docker_volume.id}"]
-  count              = "${var.num_instances}"
 
+  private_networking = true
+  volume_ids 		 = ["${digitalocean_volume.docker_volume.*.id}"]
+  ssh_keys           = ["${var.ssh_key_ID}"]
+  count              = "${var.num_instances}"
   connection {
     type        = "ssh"
     private_key = "${file("${var.key_path}")}"
@@ -57,8 +58,8 @@ resource "digitalocean_droplet" "docker" {
 #terraform import -var do_token=$DIGITALOCEAN_TOKEN digitalocean_floating_ip.carmonit 46.101.68.36
 
 resource "digitalocean_floating_ip" "carmonit" {
-    droplet_id = "${digitalocean_droplet.docker.id}"
-    region = "${digitalocean_droplet.docker.region}"
+    droplet_id = "${digitalocean_droplet.docker.0.id}"
+    region = "${digitalocean_droplet.docker.0.region}"
 }
 
 # Create a new domain using DO API

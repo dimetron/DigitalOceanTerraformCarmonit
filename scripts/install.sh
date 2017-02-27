@@ -3,8 +3,9 @@ set -e
 
 echo "Installing dependencies..."
 if [ -x "$(command -v apt-get)" ]; then
+  sudo add-apt-repository universe
   sudo apt-get update -y
-  sudo apt-get install -y unzip fail2ban zsh
+  sudo apt-get install -y unzip fail2ban zsh htop
 else
   sudo yum update -y
   sudo yum install -y unzip wget
@@ -12,7 +13,7 @@ fi
 
 
 echo "Fetching Consul..."
-CONSUL=0.7.0
+CONSUL=0.7.5
 cd /tmp
 wget https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_amd64.zip -O consul.zip
 
@@ -56,14 +57,17 @@ echo "Install Docker compose"
 curl -L "https://github.com/docker/compose/releases/download/1.11.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
-echo "Mount Volume"
-sudo mkdir -p /mnt/volume-docker-fra1;
-sudo mount -o discard,defaults /dev/disk/by-id/scsi-0DO_Volume_volume-docker-fra1 /mnt/volume-docker-fra1; 
-echo /dev/disk/by-id/scsi-0DO_Volume_volume-docker-fra1 /mnt/volume-docker-fra1 ext4 defaults,nofail,discard 0 0 | sudo tee -a /etc/fstab
+export HOST=`hostname`
+echo "Mount Volume "
+mkdir /mnt/volume-docker; 
+
+#sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0DO_Volume_volume-docker-$HOST
+sudo mount -o discard,defaults /dev/disk/by-id/scsi-0DO_Volume_volume-docker-$HOST /mnt/volume-docker;
+echo /dev/disk/by-id/scsi-0DO_Volume_volume-docker-$HOST /mnt/volume-docker ext4 defaults,nofail,discard 0 0 | sudo tee -a /etc/fstab
+
 
 echo "Start applications"
-cd /mnt/volume-docker-fra1/DockerServer
+sudo mkdir -p /mnt/volume-docker/DockerServer
+cd /mnt/volume-docker/DockerServer
 docker-compose pull
 docker-compose up -d
-
-
